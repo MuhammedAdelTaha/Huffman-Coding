@@ -11,6 +11,9 @@ import java.util.Map;
 public class Decompression {
     public Decompression() {}
 
+    /**
+     * This function takes a list of bytes, and returns a string of bits representing the integer.
+     * */
     private String readInt(List<Integer> bytes) {
         StringBuilder binaryString = new StringBuilder();
         for (int i = 0; i < 4; i++) {
@@ -21,6 +24,10 @@ public class Decompression {
         return binaryString.toString();
     }
 
+    /**
+     * This function takes a list of bytes, a dictionary size, n, and remaining, and returns a dictionary (data to
+     * codes).
+     * */
     private Map<String, String> extractOppositeDict(List<Integer> data, int dictSize, int n, int remaining) {
         Map<String, String> codes = new HashMap<>();
         for (int entryIdx = 0; entryIdx < dictSize; entryIdx++) {
@@ -43,6 +50,10 @@ public class Decompression {
         return codes;
     }
 
+    /**
+     * This function takes a list of bytes, a start index, and a length, and returns a string of bits representing the
+     * compressed data.
+     * */
     private StringBuilder extractCompressedData(List<Integer> data, int startIdx, int len) {
         StringBuilder compressedData = new StringBuilder();
         for (int i = startIdx; i < data.size(); i++) {
@@ -52,23 +63,27 @@ public class Decompression {
         return new StringBuilder(compressedData.substring(0, len));
     }
 
+    /**
+     * This function takes a decompressed file path, a dictionary, a compressed data, and its length, and writes the
+     * decompressed file.
+     * */
     private void writeDecompressedFile(String filePath, Map<String, String> dict, StringBuilder compressedData, int len)
             throws IOException {
         FileOutputStream fileOutputStream = new FileOutputStream(filePath);
 
-        StringBuilder decompressedData = new StringBuilder();
         StringBuilder current = new StringBuilder();
         for (int i = 0; i < len; i++) {
             current.append(compressedData.charAt(i));
             if (dict.containsKey(current.toString())) {
-                String[] bytes = dict.get(current.toString()).split(" ");
-                for (String byteString : bytes) decompressedData.append((char) Integer.parseInt(byteString, 16));
+                String[] hexStrings = dict.get(current.toString()).split(" ");
+                for (String hexString : hexStrings)  {
+                     fileOutputStream.write(Integer.parseInt(hexString, 16));
+                     fileOutputStream.flush();
+                }
                 current = new StringBuilder();
             }
         }
 
-        fileOutputStream.write(decompressedData.toString().getBytes());
-        fileOutputStream.flush();
         fileOutputStream.close();
     }
 
@@ -89,11 +104,8 @@ public class Decompression {
         // Extract the dictionary size, n, and remaining.
         List<Integer> dictSizeList = data.subList(0, 4);
         int dictSize = Integer.parseInt(readInt(dictSizeList), 2);
-        System.out.println("Dictionary size: " + dictSize);
         int n = data.get(4);
-        System.out.println("n: " + n);
         int remaining = data.get(5);
-        System.out.println("Remaining: " + remaining);
 
         // Extract the opposite dictionary (codes to data).
         Map<String, String> codesToData = extractOppositeDict(data, dictSize, n, remaining);
@@ -102,7 +114,9 @@ public class Decompression {
         int nextIdx = 6 + (dictSize - 1) * (n + 5) + remaining + 5;
 
         // Extract the length of the compressed data.
-        int compressedDataLength = data.get(nextIdx); nextIdx++;
+        List<Integer> compressedDataLengthList = data.subList(nextIdx, nextIdx + 4);
+        int compressedDataLength = Integer.parseInt(readInt(compressedDataLengthList), 2);
+        nextIdx += 4;
 
         // Extract the compressed data.
         StringBuilder compressedData = extractCompressedData(data, nextIdx, compressedDataLength);
