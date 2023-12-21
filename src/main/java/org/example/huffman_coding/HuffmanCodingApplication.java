@@ -1,8 +1,27 @@
 package org.example.huffman_coding;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class HuffmanCodingApplication {
+    private static float getCompressionRatio(String inputFilePath, String outputFilePath) throws IOException {
+        Path uncompressedFilePath = Paths.get(inputFilePath);
+        Path compressedFilePath = Paths.get(outputFilePath);
+        if (!Files.exists(uncompressedFilePath)) {
+            System.out.println("The input file does not exist.");
+            System.exit(0);
+        }
+        if (!Files.exists(compressedFilePath)) {
+            System.out.println("The output file does not exist.");
+            System.exit(0);
+        }
+        long uncompressedFileSize = Files.size(uncompressedFilePath);
+        long compressedFileSize = Files.size(compressedFilePath);
+        return (float) uncompressedFileSize / compressedFileSize;
+    }
+
     public static void main(String[] args) throws IOException {
         if (args.length != 2 && args.length != 3) {
             System.out.println("If you want to compress a file, run the program with the following arguments:");
@@ -22,7 +41,10 @@ public class HuffmanCodingApplication {
             }
             int n = Integer.parseInt(args[2]);
             Compression compression = new Compression();
-            compression.compress(inputFilePath, n);
+            long startTime = System.currentTimeMillis();
+            String compressedFilePath = compression.compress(inputFilePath, n);
+            System.out.println("Time taken: " + (System.currentTimeMillis() - startTime) + "ms");
+            System.out.println("Compression ratio: " + getCompressionRatio(inputFilePath, compressedFilePath));
         } else if (mode.equals("d")) {
             Decompression decompression = new Decompression();
             decompression.decompress(inputFilePath);

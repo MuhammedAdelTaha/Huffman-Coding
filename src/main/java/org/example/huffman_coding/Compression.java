@@ -221,40 +221,27 @@ public class Compression {
     /**
      * This function takes a file path and n, reads the file, compresses it, and writes the compressed file.
      * */
-    public void compress(String filePath, int n) throws IOException {
+    public String compress(String filePath, int n) throws IOException {
         String fileName = filePath.substring(filePath.lastIndexOf("\\") + 1);
         String compressedFilePath = filePath.substring(0, filePath.lastIndexOf("\\") + 1) + "20011629." + n + "."
                 + fileName + ".hc";
 
-        long[] times = new long[5];
-
-        long startTime = System.currentTimeMillis();
+        // Read the file and get the n bytes hex strings.
         String[] nBytes = readFileToNBytesHex(filePath, n);
-        times[0] = System.currentTimeMillis() - startTime;
-        System.out.println("Reading file: " + times[0] + " ms");
 
-        startTime = System.currentTimeMillis();
+        // Get the frequencies of the n bytes hex strings.
         Map<String, Integer> frequencies = getFrequenciesForNBytes(nBytes);
-        times[1] = System.currentTimeMillis() - startTime;
-        System.out.println("Getting frequencies: " + times[1] + " ms");
 
-        startTime = System.currentTimeMillis();
+        // Get the root of the Huffman tree.
         Node root = huffmanCoding(frequencies);
-        times[2] = System.currentTimeMillis() - startTime;
-        System.out.println("Huffman coding: " + times[2] + " ms");
 
-        startTime = System.currentTimeMillis();
+        // Get the codewords of the n bytes hex strings.
         Map<String, String> codes = new HashMap<>();
         getCodes(root, "", codes);
 
-        times[3] = System.currentTimeMillis() - startTime;
-        System.out.println("Getting codes: " + times[3] + " ms");
-
-        startTime = System.currentTimeMillis();
+        // Write the compressed file.
         writeCompressedFile(compressedFilePath, codes, nBytes);
-        times[4] = System.currentTimeMillis() - startTime;
-        System.out.println("Writing compressed file: " + times[4] + " ms");
 
-        System.out.println("Total time: " + (times[0] + times[1] + times[2] + times[3] + times[4]) + " ms");
+        return compressedFilePath;
     }
 }

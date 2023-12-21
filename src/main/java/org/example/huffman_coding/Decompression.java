@@ -137,8 +137,7 @@ public class Decompression {
         String decompressedFilePath = compressedFilePath.replace(fileName, "extracted." +
                 fileName.substring(0, fileName.lastIndexOf(".")));
 
-        long startTime = System.currentTimeMillis();
+        // Decompress the file.
         decompressFile(compressedFilePath, decompressedFilePath);
-        System.out.println("Writing decompressed file: " + (System.currentTimeMillis() - startTime) + " ms");
     }
 }
