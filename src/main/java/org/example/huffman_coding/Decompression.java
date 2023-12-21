@@ -6,13 +6,19 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * I acknowledge that I am aware of the academic integrity guidelines of this course, and that I worked on this
+ * assignment independently without any unauthorized help.
+ * */
 public class Decompression {
+    private int startIdx = 0;
+
     public Decompression() {}
 
-    private int[] readNBytes(FileInputStream fileInputStream) throws IOException {
+    private int[] readNBytes(byte[] data) {
         int[] bytes = new int[4];
         for (int i = 0; i < 4; i++) {
-            bytes[i] = fileInputStream.read();
+            bytes[i] = data[startIdx++];
             if (bytes[i] < 0) bytes[i] += 256;
         }
         return bytes;
@@ -35,18 +41,18 @@ public class Decompression {
      * This function takes a list of bytes, a dictionary size, n, and remaining, and returns a dictionary (data to
      * codes).
      * */
-    private Map<String, String> extractOppositeDict(FileInputStream fileInputStream, int dictSize) throws IOException {
+    private Map<String, String> extractOppositeDict(byte[] data, int dictSize) {
         Map<String, String> codes = new HashMap<>();
         for (int entryIdx = 0; entryIdx < dictSize; entryIdx++) {
             StringBuilder entryKey = new StringBuilder();
-            char c = (char) fileInputStream.read();
+            char c = (char) data[startIdx++];
             while (c != ':') {
                 entryKey.append(c);
-                c = (char) fileInputStream.read();
+                c = (char) data[startIdx++];
             }
 
-            int codeLength = fileInputStream.read();
-            int[] codeBytes = readNBytes(fileInputStream);
+            int codeLength = data[startIdx++];
+            int[] codeBytes = readNBytes(data);
 
             String s = readInt(codeBytes);
             int binaryStringStartIdx = s.length() - codeLength;
@@ -60,16 +66,19 @@ public class Decompression {
      * This function takes a list of bytes, a start index, and a length, and returns a string of bits representing the
      * compressed data.
      * */
-    private StringBuilder extractCompressedData(FileInputStream fileInputStream, int bytesCount, int len) throws IOException {
+    private StringBuilder extractCompressedData(byte[] data, int bytesCount) {
         StringBuilder compressedData = new StringBuilder();
 
         int i = 0;
         while (i++ < bytesCount) {
-            String byteString = Integer.toBinaryString(fileInputStream.read());
+            byte b = data[startIdx++];
+            int a = b;
+            if (b < 0) a += 256;
+            String byteString = Integer.toBinaryString(a);
             byteString = "0".repeat(8 - byteString.length()) + byteString;
             compressedData.append(byteString);
         }
-        return new StringBuilder(compressedData.substring(0, len));
+        return compressedData;
     }
 
     /**
@@ -97,25 +106,25 @@ public class Decompression {
      * This function takes a compressed file path and a decompressed file path, reads the compressed file, decompresses
      * it, and writes the decompressed file.
      * */
-    private void decompressFile(FileInputStream fileInputStream, FileOutputStream fileOutputStream) throws IOException {
+    private void decompressFile(byte[] data, FileOutputStream fileOutputStream) throws IOException {
 
         // Extract the dictionary size, n, and remaining.
-        int[] dictSizeList = readNBytes(fileInputStream);
+        int[] dictSizeList = readNBytes(data);
         int dictSize = Integer.parseInt(readInt(dictSizeList), 2);
 
         // Extract the opposite dictionary (codes to data).
-        Map<String, String> codesToData = extractOppositeDict(fileInputStream, dictSize);
+        Map<String, String> codesToData = extractOppositeDict(data, dictSize);
 
         // Extract the length of the compressed data.
-        int[] compressedDataLengthList = readNBytes(fileInputStream);
+        int[] compressedDataLengthList = readNBytes(data);
         int compressedDataLength = Integer.parseInt(readInt(compressedDataLengthList), 2);
 
         // Extract the number of bytes that the compressed data takes.
-        int[] compressedDataBytesCountList = readNBytes(fileInputStream);
+        int[] compressedDataBytesCountList = readNBytes(data);
         int compressedDataBytesCount = Integer.parseInt(readInt(compressedDataBytesCountList), 2);
 
         // Extract the compressed data.
-        StringBuilder compressedData = extractCompressedData(fileInputStream, compressedDataBytesCount, compressedDataLength);
+        StringBuilder compressedData = extractCompressedData(data, compressedDataBytesCount);
 
         // Write the decompressed file.
         writeDecompressedFile(fileOutputStream, codesToData, compressedData, compressedDataLength);
@@ -137,7 +146,8 @@ public class Decompression {
         FileInputStream fileInputStream = new FileInputStream(compressedFilePath);
         FileOutputStream fileOutputStream = new FileOutputStream(decompressedFilePath);
 
-        while (fileInputStream.available() > 0) decompressFile(fileInputStream, fileOutputStream);
+        byte[] data = fileInputStream.readAllBytes();
+        while (startIdx < data.length) decompressFile(data, fileOutputStream);
 
         fileInputStream.close();
         fileOutputStream.close();
