@@ -32,12 +32,14 @@ public class Compression {
     private void writeInt(FileOutputStream fileOutputStream, String binaryString) throws IOException {
         int leadingZerosCount = 32 - binaryString.length();
         binaryString = "0".repeat(leadingZerosCount) + binaryString;
+        byte[] bytes = new byte[4];
         for (int i = 0; i < 4; i++) {
             String byteString = binaryString.substring(i * 8, (i + 1) * 8);
             int byteValue = Integer.parseInt(byteString, 2);
-            fileOutputStream.write(byteValue);
-            fileOutputStream.flush();
+            bytes[i] = (byte) byteValue;
         }
+        fileOutputStream.write(bytes);
+        fileOutputStream.flush();
     }
 
     /**
@@ -62,22 +64,21 @@ public class Compression {
     }
 
     /**
-     * This function takes a file path and n, reads the file, and returns a list of n bytes hex strings.
-     * */
-    private String[] readFileToNBytesHex(String filePath, int n) throws IOException {
-        FileInputStream fileInputStream = new FileInputStream(filePath);
-        byte[] data = fileInputStream.readAllBytes();
-
-        fileInputStream.close();
-        return getHexStrings(data, n);
-    }
-
-    /**
      * This function takes a list of n bytes hex strings, and returns a map of each hex string and its frequency.
      * */
-    private Map<String, Integer> getFrequenciesForNBytes(String[] nBytes) {
+    private Map<String, Integer> getFrequenciesForNBytes(byte[] data, int n) {
         Map<String, Integer> frequencies = new HashMap<>();
-        for (String nByte : nBytes) frequencies.put(nByte, frequencies.getOrDefault(nByte, 0) + 1);
+        int i;
+        for (i = 0; i < data.length - n + 1; i+= n) {
+            StringBuilder key = new StringBuilder();
+            for (int j = 0; j < n; j++) key.append(String.format("%02X", data[i + j]));
+            frequencies.put(key.toString(), frequencies.getOrDefault(key.toString(), 0) + 1);
+        }
+
+        StringBuilder key = new StringBuilder();
+        for (int j = 0; j < n && i + j < data.length; j++) key.append(String.format("%02X", data[i + j]));
+        if (!key.isEmpty()) frequencies.put(key.toString(), frequencies.getOrDefault(key.toString(), 0) + 1);
+
         return frequencies;
     }
 
@@ -126,49 +127,32 @@ public class Compression {
     }
 
     /**
-     * This function takes a file output stream, a key, and a value, and writes the key and its length, and the value as
-     * a string of bits to the file (integer represented as a string of bits) (4 bytes).
-     * */
-    private void writeEntry(FileOutputStream fileOutputStream, String key, String val) throws IOException {
-        fileOutputStream.write(key.getBytes());
-        fileOutputStream.write(val.length());
-        writeInt(fileOutputStream, val);
-    }
-
-    /**
      * This function takes a file output stream, a dictionary, and the last entry key, and writes the dictionary to the
      * file.
      * */
-    private void writeDict(FileOutputStream fileOutputStream, Map<String, String> codes, String lastEntryKey)
-            throws IOException {
-        // Write the entries of the dictionary.;
-        String lastEntryVal = null;
+    private void writeDict(FileOutputStream fileOutputStream, Map<String, String> codes) throws IOException {
+        // Write the entries of the dictionary.
         for (Map.Entry<String, String> entry : codes.entrySet()) {
             String key = entry.getKey();
             String val = entry.getValue();
-
-            if (key.equals(lastEntryKey)) {
-                lastEntryVal = val;
-                continue;
-            }
-
-            writeEntry(fileOutputStream, key, val);
+            fileOutputStream.write(key.getBytes());
+            fileOutputStream.write(val.length());
+            writeInt(fileOutputStream, val);
         }
-
-        // Write the last entry of the dictionary.
-        assert lastEntryVal != null;
-        writeEntry(fileOutputStream, lastEntryKey, lastEntryVal);
     }
 
     /**
      * This function takes a file output stream, a map of each hex string and its codeword, and a list of n bytes hex
      * strings, and writes the compressed data to the file.
      * */
-    private void writeCompressedData(FileOutputStream fileOutputStream, Map<String, String> codes, String[] nBytes)
+    private void writeCompressedData(FileOutputStream fileOutputStream, Map<String, String> codes, byte[] data)
             throws IOException {
         // Convert the actual characters to their corresponding codewords.
         StringBuilder compressedData = new StringBuilder();
-        for (String nByte : nBytes) compressedData.append(codes.get(nByte));
+        for (byte aByte : data) {
+            String key = String.format("%02X", aByte);
+            compressedData.append(codes.get(key));
+        }
 
         // Write the length of the compressed data.
         int compressedDataLength = compressedData.length();
@@ -193,29 +177,19 @@ public class Compression {
      * This function takes a file path, a map of each hex string and its codeword, and a list of n bytes hex strings,
      * and writes the compressed file.
      * */
-    private void writeCompressedFile(String filePath, Map<String, String> codes, String[] nBytes) throws IOException {
-        FileOutputStream fileOutputStream = new FileOutputStream(filePath);
-
+    private void writeCompressedFile(FileOutputStream fileOutputStream, Map<String, String> codes, byte[] data, int n)
+            throws IOException {
         // Write the number of entries in the dictionary.
         writeInt(fileOutputStream, Integer.toBinaryString(codes.size()));
 
-        // Write the normal length of the characters (n).
-        byte n = (byte) nBytes[0].length();
+        // Write the number of bytes taken together (n).
         fileOutputStream.write(n);
 
-        // Write the length of the remaining characters after taking each n character together. The remaining
-        // characters are the characters that are not a multiple of n. The remaining characters are the characters
-        // on the last entry of the dictionary.
-        byte remaining = (byte) nBytes[nBytes.length - 1].length();
-        fileOutputStream.write(remaining);
-
-        // Write the dictionary.
-        writeDict(fileOutputStream, codes, nBytes[nBytes.length - 1]);
+//         Write the dictionary.
+        writeDict(fileOutputStream, codes);
 
         // Write the compressed data and its length.
-        writeCompressedData(fileOutputStream, codes, nBytes);
-
-        fileOutputStream.close();
+        writeCompressedData(fileOutputStream, codes, data);
     }
 
     /**
@@ -226,21 +200,69 @@ public class Compression {
         String compressedFilePath = filePath.substring(0, filePath.lastIndexOf("\\") + 1) + "20011629." + n + "."
                 + fileName + ".hc";
 
-        // Read the file and get the n bytes hex strings.
-        String[] nBytes = readFileToNBytesHex(filePath, n);
+        FileInputStream fileInputStream = new FileInputStream(filePath);
+        FileOutputStream fileOutputStream = new FileOutputStream(compressedFilePath);
+        int chunkSize = 16384 - 16384 % n;
+        int fileSize = fileInputStream.available();
 
-        // Get the frequencies of the n bytes hex strings.
-        Map<String, Integer> frequencies = getFrequenciesForNBytes(nBytes);
+        long readTime = 0;
+        long frequenciesTime = 0;
+        long huffmanCodingTime = 0;
+        long codesTime = 0;
+        long writeTime = 0;
+        for (int i = 0; i < fileSize; i += chunkSize) {
+            int available = Math.min(chunkSize, fileSize - i);
+            long startTime = System.currentTimeMillis();
+            byte[] data = fileInputStream.readNBytes(chunkSize);
+//            String[] nBytes = getHexStrings(data, n);
+            readTime += System.currentTimeMillis() - startTime;
 
-        // Get the root of the Huffman tree.
-        Node root = huffmanCoding(frequencies);
+            startTime = System.currentTimeMillis();
+            Map<String, Integer> frequencies = getFrequenciesForNBytes(data, n);
+            frequenciesTime += System.currentTimeMillis() - startTime;
 
-        // Get the codewords of the n bytes hex strings.
-        Map<String, String> codes = new HashMap<>();
-        getCodes(root, "", codes);
+            startTime = System.currentTimeMillis();
+            Node root = huffmanCoding(frequencies);
+            huffmanCodingTime += System.currentTimeMillis() - startTime;
 
-        // Write the compressed file.
-        writeCompressedFile(compressedFilePath, codes, nBytes);
+            startTime = System.currentTimeMillis();
+            Map<String, String> codes = new HashMap<>();
+            getCodes(root, "", codes);
+            codesTime += System.currentTimeMillis() - startTime;
+
+            startTime = System.currentTimeMillis();
+            writeCompressedFile(fileOutputStream, codes, data, n);
+            writeTime += System.currentTimeMillis() - startTime;
+        }
+        fileInputStream.close();
+        fileOutputStream.close();
+
+        System.out.println("Read time: " + readTime + " ms");
+        System.out.println("Frequencies time: " + frequenciesTime + " ms");
+        System.out.println("Huffman coding time: " + huffmanCodingTime + " ms");
+        System.out.println("Codes time: " + codesTime + " ms");
+        System.out.println("Write time: " + writeTime + " ms");
+
+//        // Read the file and get the n bytes hex strings.
+//        String[] nBytes = readFileToNBytesHex(fileInputStream, n);
+//        System.out.println("Done reading the file.");
+//
+//        // Get the frequencies of the n bytes hex strings.
+//        Map<String, Integer> frequencies = getFrequenciesForNBytes(nBytes);
+//        System.out.println("Done getting the frequencies.");
+//
+//        // Get the root of the Huffman tree.
+//        Node root = huffmanCoding(frequencies);
+//        System.out.println("Done Huffman coding.");
+//
+//        // Get the codewords of the n bytes hex strings.
+//        Map<String, String> codes = new HashMap<>();
+//        getCodes(root, "", codes);
+//        System.out.println("Done getting the codewords.");
+//
+//        // Write the compressed file.
+//        writeCompressedFile(compressedFilePath, codes, nBytes);
+//        System.out.println("Done writing the compressed file.");
 
         return compressedFilePath;
     }
