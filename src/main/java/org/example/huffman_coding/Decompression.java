@@ -43,14 +43,13 @@ public class Decompression {
         return codes;
     }
 
-    private StringBuilder extractCompressedData(List<Integer> data, int startIdx, int dataSize) {
+    private StringBuilder extractCompressedData(List<Integer> data, int startIdx, int len) {
         StringBuilder compressedData = new StringBuilder();
-        for (int i = startIdx; i < dataSize; i++) {
-            String byteString = Integer.toBinaryString(data.get(i));
-            byteString = "0".repeat(8 - byteString.length()) + byteString;
+        for (int i = startIdx; i < data.size(); i++) {
+            String byteString = String.format("%8s", Integer.toBinaryString(data.get(i))).replace(' ', '0');
             compressedData.append(byteString);
         }
-        return compressedData;
+        return new StringBuilder(compressedData.substring(0, len));
     }
 
     private void writeDecompressedFile(String filePath, Map<String, String> dict, StringBuilder compressedData, int len)
@@ -62,7 +61,8 @@ public class Decompression {
         for (int i = 0; i < len; i++) {
             current.append(compressedData.charAt(i));
             if (dict.containsKey(current.toString())) {
-                decompressedData.append(dict.get(current.toString()));
+                String[] bytes = dict.get(current.toString()).split(" ");
+                for (String byteString : bytes) decompressedData.append((char) Integer.parseInt(byteString, 16));
                 current = new StringBuilder();
             }
         }
@@ -89,17 +89,23 @@ public class Decompression {
         // Extract the dictionary size, n, and remaining.
         List<Integer> dictSizeList = data.subList(0, 4);
         int dictSize = Integer.parseInt(readInt(dictSizeList), 2);
+        System.out.println("Dictionary size: " + dictSize);
         int n = data.get(4);
+        System.out.println("n: " + n);
         int remaining = data.get(5);
+        System.out.println("Remaining: " + remaining);
 
         // Extract the opposite dictionary (codes to data).
         Map<String, String> codesToData = extractOppositeDict(data, dictSize, n, remaining);
+
+        // The beginning of the compressed data and its length.
         int nextIdx = 6 + (dictSize - 1) * (n + 5) + remaining + 5;
-        int compressedDataLength = data.get(nextIdx);
-        nextIdx++;
+
+        // Extract the length of the compressed data.
+        int compressedDataLength = data.get(nextIdx); nextIdx++;
 
         // Extract the compressed data.
-        StringBuilder compressedData = extractCompressedData(data, nextIdx, data.size());
+        StringBuilder compressedData = extractCompressedData(data, nextIdx, compressedDataLength);
 
         // Write the decompressed file.
         writeDecompressedFile(decompressedFilePath, codesToData, compressedData, compressedDataLength);

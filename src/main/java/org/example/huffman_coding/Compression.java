@@ -31,12 +31,12 @@ public class Compression {
         int i;
         for (i = 0; i < data.length - n + 1; i+= n) {
             StringBuilder key = new StringBuilder();
-            for (int j = 0; j < n; j++) key.append((char) data[i + j]);
+            for (int j = 0; j < n; j++) key.append(String.format("%02X ", data[i + j]));
             nBytes[i / n] = key.toString();
         }
 
         StringBuilder key = new StringBuilder();
-        for (int j = 0; j < n && i + j < data.length; j++) key.append((char) data[i + j]);
+        for (int j = 0; j < n && i + j < data.length; j++) key.append(String.format("%02X ", data[i + j]));
         if (!key.isEmpty()) nBytes[i / n] = key.toString();
 
         return nBytes;
@@ -112,7 +112,6 @@ public class Compression {
         fileOutputStream.write(key.getBytes());
         fileOutputStream.write(val.length());
         writeInt(fileOutputStream, val);
-        fileOutputStream.flush();
     }
 
     private void writeCompressedFile(String filePath, Map<String, String> codes, String[] nBytes) throws IOException {
