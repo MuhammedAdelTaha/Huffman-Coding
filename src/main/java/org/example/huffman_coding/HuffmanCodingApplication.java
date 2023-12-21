@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Hashtable;
 
 public class HuffmanCodingApplication {
     private static float getCompressionRatio(String inputFilePath, String outputFilePath) throws IOException {
@@ -58,7 +56,7 @@ public class HuffmanCodingApplication {
 //        }
         Compression compression = new Compression();
         long startTime = System.currentTimeMillis();
-        String compressedFilePath = compression.compress("C:\\Users\\Mohamed Adel\\IdeaProjects\\huffman_coding\\Test_Cases\\gbbct10.seq", 1);
+        String compressedFilePath = compression.compress("C:\\Users\\Mohamed Adel\\IdeaProjects\\huffman_coding\\Test_Cases\\Algorithms - Lecture 7 and 8 (Greedy algorithms).pdf", 1);
         System.out.println("Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
     }
 }
