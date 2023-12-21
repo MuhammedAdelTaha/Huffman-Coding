@@ -54,9 +54,14 @@ public class HuffmanCodingApplication {
 //            System.out.println("Invalid mode. Please enter either 'c' or 'd'.");
 //            System.exit(0);
 //        }
-        Compression compression = new Compression();
+//        Compression compression = new Compression();
+//        long startTime = System.currentTimeMillis();
+//        String compressedFilePath = compression.compress("C:\\Users\\Mohamed Adel\\IdeaProjects\\huffman_coding\\Test_Cases\\gbbct10.seq", 1);
+//        System.out.println("Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
+
+        Decompression decompression = new Decompression();
         long startTime = System.currentTimeMillis();
-        String compressedFilePath = compression.compress("C:\\Users\\Mohamed Adel\\IdeaProjects\\huffman_coding\\Test_Cases\\Algorithms - Lecture 7 and 8 (Greedy algorithms).pdf", 1);
+        decompression.decompress("C:\\Users\\Mohamed Adel\\IdeaProjects\\huffman_coding\\Test_Cases\\20011629.1.gbbct10.seq.hc");
         System.out.println("Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
     }
 }
