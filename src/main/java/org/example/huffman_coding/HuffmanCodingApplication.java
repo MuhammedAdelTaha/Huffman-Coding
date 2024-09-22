@@ -4,11 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Scanner;
 
-/**
- * I acknowledge that I am aware of the academic integrity guidelines of this course, and that I worked on this
- * assignment independently without any unauthorized help.
- * */
 public class HuffmanCodingApplication {
     private static float getCompressionRatio(String inputFilePath, String outputFilePath) throws IOException {
         Path uncompressedFilePath = Paths.get(inputFilePath);
@@ -27,26 +24,18 @@ public class HuffmanCodingApplication {
     }
 
     public static void main(String[] args) throws IOException {
-        if (args.length != 2 && args.length != 3) {
-            System.out.println("If you want to compress a file, run the program with the following arguments:");
-            System.out.println("java -jar huffman_20011629.jar <c> <absolute_path_to_input_file> <n>");
-            System.out.println("If you want to decompress a file, run the program with the following arguments:");
-            System.out.println("java -jar huffman_20011629.jar <d> <absolute_path_to_input_file>");
-            System.exit(0);
-        }
+        Scanner scanner = new Scanner(System.in);
 
-        String mode = args[0];
-        String inputFilePath = args[1];
+        System.out.println("Absolute file path: ");
+        String inputFilePath = scanner.nextLine();
+
+        System.out.println("Mode: ");
+        String mode = scanner.nextLine();
 
         if (mode.equals("c")) {
-            if (args.length != 3) {
-                System.out.println("Please enter the value of n.");
-                System.exit(0);
-            }
-            int n = Integer.parseInt(args[2]);
             Compression compression = new Compression();
             long startTime = System.currentTimeMillis();
-            String compressedFilePath = compression.compress(inputFilePath, n);
+            String compressedFilePath = compression.compress(inputFilePath);
             System.out.println("Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
             System.out.println("Compression ratio: " + getCompressionRatio(inputFilePath, compressedFilePath));
         } else if (mode.equals("d")) {

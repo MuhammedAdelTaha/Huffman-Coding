@@ -6,10 +6,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * I acknowledge that I am aware of the academic integrity guidelines of this course, and that I worked on this
- * assignment independently without any unauthorized help.
- * */
 public class Decompression {
     private int startIdx = 0;
 
@@ -25,7 +21,7 @@ public class Decompression {
     }
 
     /**
-     * This function takes a list of bytes, and returns a string of bits representing the integer.
+     * This function takes a list of bytes and returns a string of bits representing the integer.
      * */
     private String readInt(int[] bytes) {
         StringBuilder binaryString = new StringBuilder();
@@ -63,7 +59,7 @@ public class Decompression {
     }
 
     /**
-     * This function takes a list of bytes, a start index, and a length, and returns a string of bits representing the
+     * This function takes a list of bytes, a start index, and a length and returns a string of bits representing the
      * compressed data.
      * */
     private StringBuilder extractCompressedData(byte[] data, int bytesCount) {
@@ -82,7 +78,7 @@ public class Decompression {
     }
 
     /**
-     * This function takes a decompressed file path, a dictionary, a compressed data, and its length, and writes the
+     * This function takes a decompressed file path, a dictionary, compressed data, and its length, and writes the
      * decompressed file.
      * */
     private void writeDecompressedFile(FileOutputStream fileOutputStream, Map<String, String> dict,
