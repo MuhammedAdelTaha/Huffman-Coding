@@ -30,7 +30,7 @@
     </dependencies>
 
     <build>
-        <finalName>huffman_20011629</finalName>
+        <finalName>huffman_coding</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

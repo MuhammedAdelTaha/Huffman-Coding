@@ -33,9 +33,12 @@ public class HuffmanCodingApplication {
         String mode = scanner.nextLine();
 
         if (mode.equals("c")) {
+            System.out.println("Block size (n): ");
+            int n = scanner.nextInt();
+
             Compression compression = new Compression();
             long startTime = System.currentTimeMillis();
-            String compressedFilePath = compression.compress(inputFilePath);
+            String compressedFilePath = compression.compress(inputFilePath, n);
             System.out.println("Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
             System.out.println("Compression ratio: " + getCompressionRatio(inputFilePath, compressedFilePath));
         } else if (mode.equals("d")) {

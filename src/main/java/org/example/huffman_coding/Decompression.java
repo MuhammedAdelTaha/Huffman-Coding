@@ -21,7 +21,7 @@ public class Decompression {
     }
 
     /**
-     * This function takes a list of bytes and returns a string of bits representing the integer.
+     * This function takes a list of bytes, and returns a string of bits representing the integer.
      * */
     private String readInt(int[] bytes) {
         StringBuilder binaryString = new StringBuilder();
@@ -59,7 +59,7 @@ public class Decompression {
     }
 
     /**
-     * This function takes a list of bytes, a start index, and a length and returns a string of bits representing the
+     * This function takes a list of bytes, a start index, and a length, and returns a string of bits representing the
      * compressed data.
      * */
     private StringBuilder extractCompressedData(byte[] data, int bytesCount) {
@@ -78,7 +78,7 @@ public class Decompression {
     }
 
     /**
-     * This function takes a decompressed file path, a dictionary, compressed data, and its length, and writes the
+     * This function takes a decompressed file path, a dictionary, a compressed data, and its length, and writes the
      * decompressed file.
      * */
     private void writeDecompressedFile(FileOutputStream fileOutputStream, Map<String, String> dict,
@@ -90,8 +90,8 @@ public class Decompression {
             if (dict.containsKey(current.toString())) {
                 String[] byteStrings = dict.get(current.toString()).split(" ");
                 for (String byteString : byteStrings)  {
-                     fileOutputStream.write(Integer.parseInt(byteString));
-                     fileOutputStream.flush();
+                    fileOutputStream.write(Integer.parseInt(byteString));
+                    fileOutputStream.flush();
                 }
                 current = new StringBuilder();
             }
@@ -130,13 +130,11 @@ public class Decompression {
      * This function takes a compressed file path, decompresses it, and writes the decompressed file.
      * */
     public void decompress(String compressedFilePath) throws IOException {
-        String fileName = compressedFilePath.substring(compressedFilePath.lastIndexOf("\\") + 1);
-        if (!fileName.endsWith(".hc")) {
+        if (!compressedFilePath.endsWith(".hc")) {
             System.out.println("Invalid file extension.");
             return;
         }
-        String decompressedFilePath = compressedFilePath.replace(fileName, "extracted." +
-                fileName.substring(0, fileName.lastIndexOf(".")));
+        String decompressedFilePath = compressedFilePath + ".decompressed";
 
         // Decompress the file.
         FileInputStream fileInputStream = new FileInputStream(compressedFilePath);
